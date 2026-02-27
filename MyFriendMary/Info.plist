@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Usamos autenticación para proteger tus datos sensibles.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Permite leer datos de salud menstrual para mejorar tu registro personal.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Permite guardar registros menstruales en Salud si decides activarlo.</string>
+</dict>
+</plist>
