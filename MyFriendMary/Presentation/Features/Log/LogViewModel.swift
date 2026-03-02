@@ -5,6 +5,7 @@ import Combine
 final class LogViewModel: ObservableObject {
     @Published var selectedDate: Date = Date()
     @Published var periodIntensity: PeriodIntensity? = nil
+    @Published var isPeriodActive: Bool = false
 
     @Published var selectedSymptoms: Set<SymptomType> = []
     @Published var symptomNote: String = ""
@@ -21,6 +22,7 @@ final class LogViewModel: ObservableObject {
     private let endPeriodUseCase: EndPeriodUseCase
     private let logSymptomsUseCase: LogSymptomsUseCase
     private let logSexEntryUseCase: LogSexEntryUseCase
+    private let cycleRepository: CycleRepository
     private let symptomRepository: SymptomRepository
     private let sexEntryRepository: SexEntryRepository
 
@@ -29,6 +31,7 @@ final class LogViewModel: ObservableObject {
         endPeriodUseCase: EndPeriodUseCase,
         logSymptomsUseCase: LogSymptomsUseCase,
         logSexEntryUseCase: LogSexEntryUseCase,
+        cycleRepository: CycleRepository,
         symptomRepository: SymptomRepository,
         sexEntryRepository: SexEntryRepository
     ) {
@@ -36,6 +39,7 @@ final class LogViewModel: ObservableObject {
         self.endPeriodUseCase = endPeriodUseCase
         self.logSymptomsUseCase = logSymptomsUseCase
         self.logSexEntryUseCase = logSexEntryUseCase
+        self.cycleRepository = cycleRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
     }
@@ -65,6 +69,8 @@ final class LogViewModel: ObservableObject {
                 sexNote = ""
             }
 
+            try await refreshPeriodState()
+
             errorMessage = nil
         } catch {
             errorMessage = "No se pudieron cargar los registros del día."
@@ -74,6 +80,7 @@ final class LogViewModel: ObservableObject {
     func logPeriodStart() async {
         do {
             try await logPeriodUseCase.execute(date: selectedDate, intensity: periodIntensity)
+            try await refreshPeriodState()
             statusMessage = "Periodo registrado."
             errorMessage = nil
         } catch {
@@ -84,6 +91,7 @@ final class LogViewModel: ObservableObject {
     func logPeriodEnd() async {
         do {
             try await endPeriodUseCase.execute(date: selectedDate)
+            try await refreshPeriodState()
             statusMessage = "Fin de periodo registrado."
             errorMessage = nil
         } catch {
@@ -118,5 +126,9 @@ final class LogViewModel: ObservableObject {
         } catch {
             errorMessage = "No se pudo guardar el encuentro."
         }
+    }
+
+    private func refreshPeriodState() async throws {
+        isPeriodActive = try await cycleRepository.getOpenCycle() != nil
     }
 }

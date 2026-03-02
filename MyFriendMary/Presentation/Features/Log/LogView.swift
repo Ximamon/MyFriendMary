@@ -2,6 +2,8 @@ import SwiftUI
 
 struct LogView: View {
     @StateObject private var viewModel: LogViewModel
+    @State private var isSymptomsExpanded = false
+    @State private var isSexExpanded = false
 
     init(container: AppContainer) {
         _viewModel = StateObject(
@@ -10,6 +12,7 @@ struct LogView: View {
                 endPeriodUseCase: container.endPeriodUseCase,
                 logSymptomsUseCase: container.logSymptomsUseCase,
                 logSexEntryUseCase: container.logSexEntryUseCase,
+                cycleRepository: container.cycleRepository,
                 symptomRepository: container.symptomRepository,
                 sexEntryRepository: container.sexEntryRepository
             )
@@ -33,6 +36,7 @@ struct LogView: View {
 
                     PeriodFormCard(
                         selectedIntensity: $viewModel.periodIntensity,
+                        isPeriodActive: viewModel.isPeriodActive,
                         onStart: {
                             Task { await viewModel.logPeriodStart() }
                         },
@@ -42,6 +46,7 @@ struct LogView: View {
                     )
 
                     SymptomFormCard(
+                        isExpanded: $isSymptomsExpanded,
                         selectedSymptoms: $viewModel.selectedSymptoms,
                         note: $viewModel.symptomNote,
                         onSave: {
@@ -50,6 +55,7 @@ struct LogView: View {
                     )
 
                     SexEntryFormCard(
+                        isExpanded: $isSexExpanded,
                         orgasmCount: $viewModel.orgasmCount,
                         selectedTypes: $viewModel.selectedSexTypes,
                         note: $viewModel.sexNote,
