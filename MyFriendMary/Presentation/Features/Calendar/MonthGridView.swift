@@ -3,6 +3,7 @@ import SwiftUI
 struct MonthGridView: View {
     let month: Date
     let marks: [CalendarDayMark]
+    let onDaySelected: (Date) -> Void
 
     private let calendar = Calendar.current
     private let weekdaySymbols = ["L", "M", "X", "J", "V", "S", "D"]
@@ -53,19 +54,32 @@ struct MonthGridView: View {
                 .font(AppTypography.body)
                 .foregroundStyle(AppColors.textPrimary)
 
-            HStack(spacing: 2) {
-                marker(isVisible: mark?.hasPeriod == true, color: AppColors.period)
-                marker(isVisible: mark?.isPredictedFertile == true, color: AppColors.fertile)
-                marker(isVisible: mark?.hasSymptoms == true, color: AppColors.symptom)
-                marker(isVisible: mark?.hasSexEntry == true, color: AppColors.encounter)
+            VStack(spacing: 2) {
+                HStack(spacing: 2) {
+                    marker(isVisible: mark?.hasPeriod == true, color: AppColors.period)
+                    marker(isVisible: mark?.isPredictedFertile == true, color: AppColors.fertile)
+                    marker(isVisible: mark?.hasSymptoms == true, color: AppColors.symptom)
+                }
+                HStack(spacing: 2) {
+                    marker(isVisible: mark?.hasSexEntry == true, color: AppColors.encounter)
+                    marker(isVisible: mark?.hasRingUsage == true, color: AppColors.ringUsage)
+                    marker(isVisible: mark?.hasRingBreak == true, color: AppColors.ringBreak)
+                }
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 42)
+        .frame(maxWidth: .infinity, minHeight: 50)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color(.tertiarySystemGroupedBackground))
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onDaySelected(day)
+        }
+        .onLongPressGesture(minimumDuration: 0.4) {
+            onDaySelected(day)
+        }
     }
 
     @ViewBuilder

@@ -5,6 +5,7 @@ struct SexEntryFormCard: View {
     @Binding var orgasmCount: Int
     @Binding var selectedTypes: Set<SexType>
     @Binding var note: String
+    let hasExistingEntry: Bool
     let onSave: () -> Void
 
     var body: some View {
@@ -40,7 +41,7 @@ struct SexEntryFormCard: View {
                         text: $note
                     )
 
-                    Button("Guardar encuentro", action: onSave)
+                    Button(hasExistingEntry ? "Actualizar encuentro" : "Guardar encuentro", action: onSave)
                         .buttonStyle(.borderedProminent)
                         .tint(AppColors.encounter)
                 }

@@ -1,17 +1,22 @@
 import SwiftUI
 
 struct LogView: View {
+    @ObservedObject private var container: AppContainer
     @StateObject private var viewModel: LogViewModel
     @State private var isSymptomsExpanded = false
     @State private var isSexExpanded = false
 
     init(container: AppContainer) {
+        self.container = container
         _viewModel = StateObject(
             wrappedValue: LogViewModel(
                 logPeriodUseCase: container.logPeriodUseCase,
                 endPeriodUseCase: container.endPeriodUseCase,
                 logSymptomsUseCase: container.logSymptomsUseCase,
                 logSexEntryUseCase: container.logSexEntryUseCase,
+                startRingPlanUseCase: container.startRingPlanUseCase,
+                endRingPlanUseCase: container.endRingPlanUseCase,
+                getRingStatusUseCase: container.getRingStatusUseCase,
                 cycleRepository: container.cycleRepository,
                 symptomRepository: container.symptomRepository,
                 sexEntryRepository: container.sexEntryRepository
@@ -45,10 +50,21 @@ struct LogView: View {
                         }
                     )
 
+                    RingFormCard(
+                        snapshot: viewModel.ringStatus,
+                        onStart: {
+                            Task { await viewModel.startRingPlan() }
+                        },
+                        onEnd: {
+                            Task { await viewModel.endRingPlan() }
+                        }
+                    )
+
                     SymptomFormCard(
                         isExpanded: $isSymptomsExpanded,
                         selectedSymptoms: $viewModel.selectedSymptoms,
                         note: $viewModel.symptomNote,
+                        hasExistingEntry: viewModel.hasExistingSymptomEntry,
                         onSave: {
                             Task { await viewModel.saveSymptoms() }
                         }
@@ -59,6 +75,7 @@ struct LogView: View {
                         orgasmCount: $viewModel.orgasmCount,
                         selectedTypes: $viewModel.selectedSexTypes,
                         note: $viewModel.sexNote,
+                        hasExistingEntry: viewModel.hasExistingSexEntry,
                         onSave: {
                             Task { await viewModel.saveSexEntry() }
                         }
@@ -85,6 +102,17 @@ struct LogView: View {
             }
             .onChange(of: viewModel.selectedDate) { _, _ in
                 Task { await viewModel.loadEntriesForSelectedDate() }
+            }
+            .onChange(of: container.requestedLogDate) { _, newValue in
+                guard let day = newValue else { return }
+
+                viewModel.selectedDate = day
+                Task {
+                    await viewModel.loadEntriesForSelectedDate()
+                    isSymptomsExpanded = viewModel.hasExistingSymptomEntry
+                    isSexExpanded = viewModel.hasExistingSexEntry
+                    container.consumeRequestedLogDate()
+                }
             }
         }
     }

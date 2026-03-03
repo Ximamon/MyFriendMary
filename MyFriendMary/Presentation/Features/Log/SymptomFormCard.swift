@@ -4,6 +4,7 @@ struct SymptomFormCard: View {
     @Binding var isExpanded: Bool
     @Binding var selectedSymptoms: Set<SymptomType>
     @Binding var note: String
+    let hasExistingEntry: Bool
     let onSave: () -> Void
 
     var body: some View {
@@ -30,7 +31,7 @@ struct SymptomFormCard: View {
                         text: $note
                     )
 
-                    Button("Guardar síntomas", action: onSave)
+                    Button(hasExistingEntry ? "Actualizar síntomas" : "Guardar síntomas", action: onSave)
                         .buttonStyle(.borderedProminent)
                         .tint(AppColors.symptom)
                 }

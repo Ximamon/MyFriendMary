@@ -18,26 +18,30 @@ struct MainTabView: View {
                     return didUnlock
                 }
             } else {
-                TabView {
+                TabView(selection: $container.selectedTab) {
                     SummaryView(container: container)
                         .tabItem {
                             Label("Resumen", systemImage: "heart.text.square")
                         }
+                        .tag(AppTab.summary)
 
                     CalendarView(container: container)
                         .tabItem {
                             Label("Calendario", systemImage: "calendar")
                         }
+                        .tag(AppTab.calendar)
 
                     LogView(container: container)
                         .tabItem {
                             Label("Registrar", systemImage: "plus.circle")
                         }
+                        .tag(AppTab.log)
 
                     SettingsView(container: container)
                         .tabItem {
                             Label("Ajustes", systemImage: "gearshape")
                         }
+                        .tag(AppTab.settings)
                 }
                 .tint(AppColors.accent)
             }

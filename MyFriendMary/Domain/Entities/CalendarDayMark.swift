@@ -6,4 +6,6 @@ struct CalendarDayMark: Codable, Equatable {
     var isPredictedFertile: Bool
     var hasSymptoms: Bool
     var hasSexEntry: Bool
+    var hasRingUsage: Bool
+    var hasRingBreak: Bool
 }

@@ -12,6 +12,10 @@ struct CalendarMarkerLegend: View {
                 legendItem(color: AppColors.symptom, title: "Síntomas")
                 legendItem(color: AppColors.encounter, title: "Encuentro")
             }
+            HStack(spacing: 12) {
+                legendItem(color: AppColors.ringUsage, title: "Anillo (uso)")
+                legendItem(color: AppColors.ringBreak, title: "Anillo (descanso)")
+            }
         }
     }
 

@@ -9,7 +9,8 @@ struct SwiftDataStack {
             SDUserProfile.self,
             SDCycle.self,
             SDSymptomEntry.self,
-            SDSexEntry.self
+            SDSexEntry.self,
+            SDContraceptivePlan.self
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         container = try ModelContainer(for: schema, configurations: [configuration])

@@ -13,7 +13,8 @@ final class SwiftDataSexEntryRepository: SexEntryRepository {
 
     func upsertEntry(_ entry: SexEntry) async throws {
         let day = DateNormalizer.startOfDay(entry.date)
-        let existing = try fetchEntry(for: day)
+        let existingEntries = try fetchEntries(for: day)
+        let existing = existingEntries.first
 
         if let existing {
             try SexEntryMapper.apply(entry, to: existing, cryptoService: cryptoService)
@@ -29,14 +30,27 @@ final class SwiftDataSexEntryRepository: SexEntryRepository {
             context.insert(model)
         }
 
+        for duplicate in existingEntries.dropFirst() {
+            context.delete(duplicate)
+        }
+
         try save()
     }
 
     func entry(for day: Date) async throws -> SexEntry? {
-        guard let model = try fetchEntry(for: day) else {
+        let entries = try fetchEntries(for: day)
+        guard let first = entries.first else {
             return nil
         }
-        return try SexEntryMapper.toDomain(model, cryptoService: cryptoService)
+
+        for duplicate in entries.dropFirst() {
+            context.delete(duplicate)
+        }
+        if entries.count > 1 {
+            try save()
+        }
+
+        return try SexEntryMapper.toDomain(first, cryptoService: cryptoService)
     }
 
     func entries(in interval: DateInterval) async throws -> [SexEntry] {
@@ -47,23 +61,44 @@ final class SwiftDataSexEntryRepository: SexEntryRepository {
             predicate: #Predicate { model in
                 model.day >= start && model.day < end
             },
-            sortBy: [SortDescriptor(\.day, order: .forward)]
+            sortBy: [
+                SortDescriptor(\.day, order: .forward),
+                SortDescriptor(\.updatedAt, order: .reverse)
+            ]
         )
 
-        return try context.fetch(descriptor).compactMap {
-            try SexEntryMapper.toDomain($0, cryptoService: cryptoService)
+        let fetched = try context.fetch(descriptor)
+        var uniqueByDay: [String: SDSexEntry] = [:]
+        var needsCleanup = false
+
+        for model in fetched {
+            let key = DayKeyFormatter.string(from: model.day)
+            if uniqueByDay[key] == nil {
+                uniqueByDay[key] = model
+            } else {
+                context.delete(model)
+                needsCleanup = true
+            }
         }
+
+        if needsCleanup {
+            try save()
+        }
+
+        return try uniqueByDay.values
+            .map { try SexEntryMapper.toDomain($0, cryptoService: cryptoService) }
+            .sorted { $0.date < $1.date }
     }
 
-    private func fetchEntry(for day: Date) throws -> SDSexEntry? {
+    private func fetchEntries(for day: Date) throws -> [SDSexEntry] {
         let normalizedDay = DateNormalizer.startOfDay(day)
-        var descriptor = FetchDescriptor<SDSexEntry>(
+        let descriptor = FetchDescriptor<SDSexEntry>(
             predicate: #Predicate { model in
                 model.day == normalizedDay
-            }
+            },
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
         )
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first
+        return try context.fetch(descriptor)
     }
 
     private func save() throws {

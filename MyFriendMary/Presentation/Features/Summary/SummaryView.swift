@@ -6,7 +6,8 @@ struct SummaryView: View {
     init(container: AppContainer) {
         _viewModel = StateObject(
             wrappedValue: SummaryViewModel(
-                predictUseCase: container.predictCycleSummaryUseCase
+                predictUseCase: container.predictCycleSummaryUseCase,
+                ringStatusUseCase: container.getRingStatusUseCase
             )
         )
     }
@@ -53,10 +54,40 @@ struct SummaryView: View {
                                     .font(AppTypography.body)
                                     .foregroundStyle(AppColors.textSecondary)
                             }
+                            if viewModel.ringStatus.isPlanActive {
+                                Text("Estimación fértil general; puede ser menos representativa con anticoncepción hormonal.")
+                                    .font(AppTypography.footnote)
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
                         } else {
                             Text("Sin historial suficiente")
                                 .font(AppTypography.body)
                                 .foregroundStyle(AppColors.textSecondary)
+                        }
+                    }
+
+                    if viewModel.ringStatus.isPlanActive {
+                        SectionHeader(title: "Anticoncepción")
+                        AppCard {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(viewModel.ringStatus.method?.displayName ?? "Anillo vaginal")
+                                        .font(AppTypography.section)
+                                    Text("Estado: \(viewModel.ringStatus.state.displayName)")
+                                        .font(AppTypography.body)
+                                        .foregroundStyle(AppColors.textSecondary)
+                                    if let nextTransition = viewModel.ringStatus.nextTransitionDate {
+                                        Text("Próximo cambio: \(nextTransition.formatted(date: .abbreviated, time: .omitted))")
+                                            .font(AppTypography.footnote)
+                                            .foregroundStyle(AppColors.textSecondary)
+                                    }
+                                }
+                                Spacer()
+                                StatusChip(
+                                    text: viewModel.ringStatus.state == .uso ? "Uso" : "Descanso",
+                                    color: viewModel.ringStatus.state == .uso ? AppColors.ringUsage : AppColors.ringBreak
+                                )
+                            }
                         }
                     }
 

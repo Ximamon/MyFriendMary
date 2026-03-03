@@ -8,23 +8,27 @@ final class JSONDataExportService: DataExportService {
         let cycles: [Cycle]
         let symptomEntries: [SymptomEntry]
         let sexEntries: [SexEntry]
+        let contraceptivePlans: [ContraceptivePlan]
     }
 
     private let profileRepository: ProfileRepository
     private let cycleRepository: CycleRepository
     private let symptomRepository: SymptomRepository
     private let sexEntryRepository: SexEntryRepository
+    private let contraceptivePlanRepository: ContraceptivePlanRepository
 
     init(
         profileRepository: ProfileRepository,
         cycleRepository: CycleRepository,
         symptomRepository: SymptomRepository,
-        sexEntryRepository: SexEntryRepository
+        sexEntryRepository: SexEntryRepository,
+        contraceptivePlanRepository: ContraceptivePlanRepository
     ) {
         self.profileRepository = profileRepository
         self.cycleRepository = cycleRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
+        self.contraceptivePlanRepository = contraceptivePlanRepository
     }
 
     func exportJSON() async throws -> URL {
@@ -38,13 +42,15 @@ final class JSONDataExportService: DataExportService {
 
         let symptoms = try await symptomRepository.entries(in: allDataInterval)
         let sexEntries = try await sexEntryRepository.entries(in: allDataInterval)
+        let contraceptivePlans = try await contraceptivePlanRepository.fetchPlans()
 
         let payload = ExportPayload(
             generatedAt: Date(),
             profile: profile,
             cycles: cycles,
             symptomEntries: symptoms,
-            sexEntries: sexEntries
+            sexEntries: sexEntries,
+            contraceptivePlans: contraceptivePlans
         )
 
         let encoder = JSONEncoder()

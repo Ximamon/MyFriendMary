@@ -9,21 +9,27 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
     private let cycleRepository: CycleRepository
     private let symptomRepository: SymptomRepository
     private let sexEntryRepository: SexEntryRepository
+    private let contraceptivePlanRepository: ContraceptivePlanRepository
     private let profileRepository: ProfileRepository
     private let predictionService: PredictionService
+    private let ringScheduleService: RingScheduleService
 
     init(
         cycleRepository: CycleRepository,
         symptomRepository: SymptomRepository,
         sexEntryRepository: SexEntryRepository,
+        contraceptivePlanRepository: ContraceptivePlanRepository,
         profileRepository: ProfileRepository,
-        predictionService: PredictionService
+        predictionService: PredictionService,
+        ringScheduleService: RingScheduleService
     ) {
         self.cycleRepository = cycleRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
+        self.contraceptivePlanRepository = contraceptivePlanRepository
         self.profileRepository = profileRepository
         self.predictionService = predictionService
+        self.ringScheduleService = ringScheduleService
     }
 
     func execute(monthAnchor: Date) async throws -> [CalendarDayMark] {
@@ -31,6 +37,7 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
         let cycles = try await cycleRepository.fetchCycles()
         let symptoms = try await symptomRepository.entries(in: month)
         let sexEntries = try await sexEntryRepository.entries(in: month)
+        let ringPlans = try await contraceptivePlanRepository.fetchPlans()
         let profile = try await profileRepository.getProfile()
         let summary = predictionService.predictSummary(today: monthAnchor, cycles: cycles, profile: profile)
 
@@ -40,12 +47,16 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
         let monthDays = makeMonthDays(in: month)
 
         return monthDays.map { day in
-            CalendarDayMark(
+            let ringState = ringState(on: day, plans: ringPlans)
+
+            return CalendarDayMark(
                 day: day,
                 hasPeriod: hasPeriod(on: day, cycles: cycles),
                 isPredictedFertile: fertileDays.contains(day),
                 hasSymptoms: symptomDays.contains(day),
-                hasSexEntry: sexDays.contains(day)
+                hasSexEntry: sexDays.contains(day),
+                hasRingUsage: ringState == .uso,
+                hasRingBreak: ringState == .descanso
             )
         }
     }
@@ -72,5 +83,22 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
             let cycleEnd = DateNormalizer.startOfDay(cycle.endDate ?? today)
             return day >= cycleStart && day <= cycleEnd
         }
+    }
+
+    private func ringState(on day: Date, plans: [ContraceptivePlan]) -> RingDayState {
+        let normalizedDay = DateNormalizer.startOfDay(day)
+        guard let plan = plans.last(where: { contains(day: normalizedDay, plan: $0) }) else {
+            return .sinPlan
+        }
+        return ringScheduleService.state(on: normalizedDay, plan: plan)
+    }
+
+    private func contains(day: Date, plan: ContraceptivePlan) -> Bool {
+        let start = DateNormalizer.startOfDay(plan.startDate)
+        guard day >= start else { return false }
+        if let endDate = plan.endDate {
+            return day <= DateNormalizer.startOfDay(endDate)
+        }
+        return true
     }
 }
