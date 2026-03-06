@@ -12,19 +12,19 @@ enum SexType: String, CaseIterable, Codable {
     var displayName: String {
         switch self {
         case .vaginalCon:
-            return "Vaginal con"
+            return "Vaginal con protección"
         case .vaginalSin:
-            return "Vaginal sin"
+            return "Vaginal sin protección"
         case .oral:
-            return "Oral"
+            return "Sexo oral"
         case .analCon:
-            return "Anal con"
+            return "Anal con protección"
         case .analSin:
-            return "Anal sin"
+            return "Anal sin protección"
         case .masturbacion:
             return "Masturbación"
         case .juguetes:
-            return "Juguetes"
+            return "Juguetes íntimos"
         }
     }
 }

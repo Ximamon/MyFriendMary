@@ -1,7 +1,7 @@
 import Foundation
 
 protocol LogPeriodUseCase {
-    func execute(date: Date, intensity: PeriodIntensity?) async throws
+    func execute(date: Date, realStartDate: Date?, intensity: PeriodIntensity?) async throws
 }
 
 @MainActor
@@ -14,20 +14,22 @@ final class DefaultLogPeriodUseCase: LogPeriodUseCase {
         self.healthKitSyncService = healthKitSyncService
     }
 
-    func execute(date: Date, intensity: PeriodIntensity?) async throws {
+    func execute(date: Date, realStartDate: Date?, intensity: PeriodIntensity?) async throws {
         _ = intensity
         let day = DateNormalizer.startOfDay(date)
+        let effectiveStart = DateNormalizer.startOfDay(realStartDate ?? day)
+        let startDay = min(effectiveStart, day)
 
         if var openCycle = try await cycleRepository.getOpenCycle() {
-            if day < openCycle.startDate {
-                openCycle.startDate = day
+            if startDay < openCycle.startDate {
+                openCycle.startDate = startDay
                 try await cycleRepository.upsertCycle(openCycle)
                 await healthKitSyncService.syncMenstrualFlow(for: openCycle)
             }
             return
         }
 
-        let newCycle = Cycle(id: UUID(), startDate: day, endDate: nil)
+        let newCycle = Cycle(id: UUID(), startDate: startDay, endDate: nil)
         try await cycleRepository.upsertCycle(newCycle)
         await healthKitSyncService.syncMenstrualFlow(for: newCycle)
     }

@@ -12,6 +12,8 @@ final class WipeAllRepository: WipeAllDataStore {
     func wipeAll() async throws {
         try deleteAll(SDSexEntry.self)
         try deleteAll(SDSymptomEntry.self)
+        try deleteAll(SDPeriodEntry.self)
+        try deleteAll(SDContraceptivePlan.self)
         try deleteAll(SDCycle.self)
         try deleteAll(SDUserProfile.self)
 

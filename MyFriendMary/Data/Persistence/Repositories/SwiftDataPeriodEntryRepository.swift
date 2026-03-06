@@ -2,26 +2,25 @@ import Foundation
 import SwiftData
 
 @MainActor
-final class SwiftDataSymptomRepository: SymptomRepository {
+final class SwiftDataPeriodEntryRepository: PeriodEntryRepository {
     private let context: ModelContext
 
     init(context: ModelContext) {
         self.context = context
     }
 
-    func upsertEntry(_ entry: SymptomEntry) async throws {
+    func upsertEntry(_ entry: PeriodEntry) async throws {
         let day = DateNormalizer.startOfDay(entry.date)
         let existingEntries = try fetchEntries(for: day)
         let existing = existingEntries.first
 
         if let existing {
-            SymptomMapper.apply(entry, to: existing)
+            PeriodEntryMapper.apply(entry, to: existing)
         } else {
-            let model = SDSymptomEntry(
+            let model = SDPeriodEntry(
                 id: entry.id,
                 day: day,
-                symptomsRaw: SymptomMapper.encodeSymptoms(entry.symptoms),
-                note: entry.note,
+                intensityRaw: entry.intensity?.rawValue,
                 updatedAt: Date()
             )
             context.insert(model)
@@ -34,7 +33,7 @@ final class SwiftDataSymptomRepository: SymptomRepository {
         try save()
     }
 
-    func entry(for day: Date) async throws -> SymptomEntry? {
+    func entry(for day: Date) async throws -> PeriodEntry? {
         let entries = try fetchEntries(for: day)
         guard let first = entries.first else {
             return nil
@@ -47,14 +46,14 @@ final class SwiftDataSymptomRepository: SymptomRepository {
             try save()
         }
 
-        return SymptomMapper.toDomain(first)
+        return PeriodEntryMapper.toDomain(first)
     }
 
-    func entries(in interval: DateInterval) async throws -> [SymptomEntry] {
+    func entries(in interval: DateInterval) async throws -> [PeriodEntry] {
         let start = DateNormalizer.startOfDay(interval.start)
         let end = interval.end
 
-        let descriptor = FetchDescriptor<SDSymptomEntry>(
+        let descriptor = FetchDescriptor<SDPeriodEntry>(
             predicate: #Predicate { model in
                 model.day >= start && model.day < end
             },
@@ -65,7 +64,7 @@ final class SwiftDataSymptomRepository: SymptomRepository {
         )
 
         let fetched = try context.fetch(descriptor)
-        var uniqueByDay: [String: SDSymptomEntry] = [:]
+        var uniqueByDay: [String: SDPeriodEntry] = [:]
         var needsCleanup = false
 
         for model in fetched {
@@ -83,13 +82,13 @@ final class SwiftDataSymptomRepository: SymptomRepository {
         }
 
         return uniqueByDay.values
-            .map(SymptomMapper.toDomain)
+            .map(PeriodEntryMapper.toDomain)
             .sorted { $0.date < $1.date }
     }
 
-    private func fetchEntries(for day: Date) throws -> [SDSymptomEntry] {
+    private func fetchEntries(for day: Date) throws -> [SDPeriodEntry] {
         let normalizedDay = DateNormalizer.startOfDay(day)
-        let descriptor = FetchDescriptor<SDSymptomEntry>(
+        let descriptor = FetchDescriptor<SDPeriodEntry>(
             predicate: #Predicate { model in
                 model.day == normalizedDay
             },

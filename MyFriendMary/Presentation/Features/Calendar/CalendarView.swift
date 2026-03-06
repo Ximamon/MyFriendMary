@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct CalendarView: View {
+    @ObservedObject private var container: AppContainer
     @StateObject private var viewModel: CalendarViewModel
 
     init(container: AppContainer) {
+        self.container = container
         _viewModel = StateObject(
             wrappedValue: CalendarViewModel(useCase: container.getCalendarMarksUseCase)
         )
@@ -36,7 +38,13 @@ struct CalendarView: View {
                         }
                         .buttonStyle(.borderless)
 
-                        MonthGridView(month: viewModel.displayMonth, marks: viewModel.marks)
+                        MonthGridView(
+                            month: viewModel.displayMonth,
+                            marks: viewModel.marks,
+                            onDaySelected: { day in
+                                container.openLog(for: day)
+                            }
+                        )
                     }
 
                     AppCard {

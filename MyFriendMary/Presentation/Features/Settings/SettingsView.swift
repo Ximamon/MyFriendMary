@@ -95,7 +95,7 @@ struct SettingsView: View {
                     Task { await viewModel.wipeAll() }
                 }
             } message: {
-                Text("Esta acción eliminará periodo, síntomas, encuentros y ajustes.")
+                Text("Esta acción eliminará periodo, síntomas, encuentros, anillo y ajustes.")
             }
         }
     }
