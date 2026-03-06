@@ -14,14 +14,15 @@ struct DefaultPredictionService: PredictionService {
 
         let avgCycleLength = averageCycleLength(closedCycles: closedCycles, fallback: profile.cycleLengthDefault)
         let avgPeriodLength = averagePeriodLength(closedCycles: closedCycles, fallback: profile.periodLengthDefault)
+        let hasActivePeriod = sortedCycles.contains { $0.endDate == nil }
 
         let lastStart = sortedCycles.last?.startDate
         let nextPeriodStart = lastStart.map { DateNormalizer.addingDays(avgCycleLength, to: $0) }
             ?? DateNormalizer.addingDays(profile.cycleLengthDefault, to: normalizedToday)
 
-        let ovulationDate = DateNormalizer.addingDays(-14, to: nextPeriodStart)
-        let fertileWindowStart = DateNormalizer.addingDays(-5, to: ovulationDate)
-        let fertileWindowEnd = DateNormalizer.addingDays(1, to: ovulationDate)
+        let ovulationDate: Date? = hasActivePeriod ? nil : DateNormalizer.addingDays(-14, to: nextPeriodStart)
+        let fertileWindowStart: Date? = ovulationDate.map { DateNormalizer.addingDays(-5, to: $0) }
+        let fertileWindowEnd: Date? = ovulationDate.map { DateNormalizer.addingDays(1, to: $0) }
 
         let daysUntilNext = max(0, DateNormalizer.daysBetween(normalizedToday, nextPeriodStart))
         let estimatedPhase = resolvePhase(
@@ -74,8 +75,8 @@ struct DefaultPredictionService: PredictionService {
     private func resolvePhase(
         today: Date,
         cycles: [Cycle],
-        fertileWindowStart: Date,
-        fertileWindowEnd: Date,
+        fertileWindowStart: Date?,
+        fertileWindowEnd: Date?,
         avgCycleLength: Int,
         avgPeriodLength: Int,
         nextPeriodStart: Date
@@ -95,10 +96,12 @@ struct DefaultPredictionService: PredictionService {
             return .menstruacion
         }
 
-        if today >= fertileWindowStart && today <= fertileWindowEnd {
+        if let fertileWindowStart,
+           let fertileWindowEnd,
+           today >= fertileWindowStart && today <= fertileWindowEnd {
             return .fertil
         }
-        if today < fertileWindowStart {
+        if let fertileWindowStart, today < fertileWindowStart {
             return .folicular
         }
         return .lutea

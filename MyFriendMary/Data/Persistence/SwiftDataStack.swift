@@ -8,6 +8,7 @@ struct SwiftDataStack {
         let schema = Schema([
             SDUserProfile.self,
             SDCycle.self,
+            SDPeriodEntry.self,
             SDSymptomEntry.self,
             SDSexEntry.self,
             SDContraceptivePlan.self

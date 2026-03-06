@@ -3,6 +3,7 @@ import SwiftUI
 struct PeriodFormCard: View {
     @Binding var selectedIntensity: PeriodIntensity?
     let isPeriodActive: Bool
+    let onIntensitySelected: (PeriodIntensity?) -> Void
     let onStart: () -> Void
     let onEnd: () -> Void
 
@@ -13,11 +14,13 @@ struct PeriodFormCard: View {
             Menu {
                 Button("Sin sangrado") {
                     selectedIntensity = nil
+                    onIntensitySelected(nil)
                 }
 
                 ForEach(PeriodIntensity.allCases, id: \.self) { intensity in
                     Button(intensity.displayName) {
                         selectedIntensity = intensity
+                        onIntensitySelected(intensity)
                     }
                 }
             } label: {

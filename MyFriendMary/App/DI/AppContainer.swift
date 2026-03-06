@@ -18,6 +18,7 @@ final class AppContainer: ObservableObject {
 
     let profileRepository: ProfileRepository
     let cycleRepository: CycleRepository
+    let periodEntryRepository: PeriodEntryRepository
     let symptomRepository: SymptomRepository
     let sexEntryRepository: SexEntryRepository
     let contraceptivePlanRepository: ContraceptivePlanRepository
@@ -32,12 +33,15 @@ final class AppContainer: ObservableObject {
 
     let logPeriodUseCase: LogPeriodUseCase
     let endPeriodUseCase: EndPeriodUseCase
+    let savePeriodIntensityUseCase: SavePeriodIntensityUseCase
     let logSymptomsUseCase: LogSymptomsUseCase
     let logSexEntryUseCase: LogSexEntryUseCase
     let startRingPlanUseCase: StartRingPlanUseCase
+    let registerRingRemovalUseCase: RegisterRingRemovalUseCase
     let endRingPlanUseCase: EndRingPlanUseCase
     let getRingStatusUseCase: GetRingStatusUseCase
     let predictCycleSummaryUseCase: PredictCycleSummaryUseCase
+    let getYearOrgasmMetricsUseCase: GetYearOrgasmMetricsUseCase
     let getCalendarMarksUseCase: GetCalendarMarksUseCase
     let exportDataUseCase: ExportDataUseCase
     let wipeAllUseCase: WipeAllUseCase
@@ -58,6 +62,7 @@ final class AppContainer: ObservableObject {
 
         let profileRepository = SwiftDataProfileRepository(context: context)
         let cycleRepository = SwiftDataCycleRepository(context: context)
+        let periodEntryRepository = SwiftDataPeriodEntryRepository(context: context)
         let symptomRepository = SwiftDataSymptomRepository(context: context)
         let sexEntryRepository = SwiftDataSexEntryRepository(context: context, cryptoService: cryptoService)
         let contraceptivePlanRepository = SwiftDataContraceptivePlanRepository(context: context)
@@ -71,6 +76,7 @@ final class AppContainer: ObservableObject {
         let exportService = JSONDataExportService(
             profileRepository: profileRepository,
             cycleRepository: cycleRepository,
+            periodEntryRepository: periodEntryRepository,
             symptomRepository: symptomRepository,
             sexEntryRepository: sexEntryRepository,
             contraceptivePlanRepository: contraceptivePlanRepository
@@ -82,6 +88,7 @@ final class AppContainer: ObservableObject {
 
         self.profileRepository = profileRepository
         self.cycleRepository = cycleRepository
+        self.periodEntryRepository = periodEntryRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
         self.contraceptivePlanRepository = contraceptivePlanRepository
@@ -102,9 +109,17 @@ final class AppContainer: ObservableObject {
             cycleRepository: cycleRepository,
             healthKitSyncService: healthKitSyncService
         )
+        self.savePeriodIntensityUseCase = DefaultSavePeriodIntensityUseCase(
+            repository: periodEntryRepository
+        )
         self.logSymptomsUseCase = DefaultLogSymptomsUseCase(repository: symptomRepository)
         self.logSexEntryUseCase = DefaultLogSexEntryUseCase(repository: sexEntryRepository)
         self.startRingPlanUseCase = DefaultStartRingPlanUseCase(
+            repository: contraceptivePlanRepository,
+            profileRepository: profileRepository,
+            notificationScheduler: contraceptionNotificationScheduler
+        )
+        self.registerRingRemovalUseCase = DefaultRegisterRingRemovalUseCase(
             repository: contraceptivePlanRepository,
             profileRepository: profileRepository,
             notificationScheduler: contraceptionNotificationScheduler
@@ -122,6 +137,9 @@ final class AppContainer: ObservableObject {
             profileRepository: profileRepository,
             cycleRepository: cycleRepository,
             predictionService: predictionService
+        )
+        self.getYearOrgasmMetricsUseCase = DefaultGetYearOrgasmMetricsUseCase(
+            repository: sexEntryRepository
         )
         self.getCalendarMarksUseCase = DefaultGetCalendarMarksUseCase(
             cycleRepository: cycleRepository,

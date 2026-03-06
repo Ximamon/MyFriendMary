@@ -7,7 +7,8 @@ struct SummaryView: View {
         _viewModel = StateObject(
             wrappedValue: SummaryViewModel(
                 predictUseCase: container.predictCycleSummaryUseCase,
-                ringStatusUseCase: container.getRingStatusUseCase
+                ringStatusUseCase: container.getRingStatusUseCase,
+                yearOrgasmMetricsUseCase: container.getYearOrgasmMetricsUseCase
             )
         )
     }
@@ -60,9 +61,33 @@ struct SummaryView: View {
                                     .foregroundStyle(AppColors.textSecondary)
                             }
                         } else {
-                            Text("Sin historial suficiente")
+                            Text(
+                                viewModel.summary.estimatedPhase == .menstruacion
+                                ? "No se muestra durante regla activa."
+                                : "Sin historial suficiente"
+                            )
                                 .font(AppTypography.body)
                                 .foregroundStyle(AppColors.textSecondary)
+                        }
+                    }
+
+                    SectionHeader(title: "Métricas del año")
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Orgasmos acumulados: \(viewModel.orgasmMetrics.totalOrgasmsYTD)")
+                                .font(AppTypography.section)
+
+                            if let bestDay = viewModel.orgasmMetrics.bestDayOfYear {
+                                Text(
+                                    "Mejor día: \(bestDay.formatted(date: .abbreviated, time: .omitted)) (\(viewModel.orgasmMetrics.bestDayOrgasmCount))"
+                                )
+                                .font(AppTypography.body)
+                                .foregroundStyle(AppColors.textSecondary)
+                            } else {
+                                Text("Mejor día: sin datos")
+                                    .font(AppTypography.body)
+                                    .foregroundStyle(AppColors.textSecondary)
+                            }
                         }
                     }
 

@@ -23,35 +23,44 @@ final class LogViewModel: ObservableObject {
 
     private let logPeriodUseCase: LogPeriodUseCase
     private let endPeriodUseCase: EndPeriodUseCase
+    private let savePeriodIntensityUseCase: SavePeriodIntensityUseCase
     private let logSymptomsUseCase: LogSymptomsUseCase
     private let logSexEntryUseCase: LogSexEntryUseCase
     private let startRingPlanUseCase: StartRingPlanUseCase
+    private let registerRingRemovalUseCase: RegisterRingRemovalUseCase
     private let endRingPlanUseCase: EndRingPlanUseCase
     private let getRingStatusUseCase: GetRingStatusUseCase
     private let cycleRepository: CycleRepository
+    private let periodEntryRepository: PeriodEntryRepository
     private let symptomRepository: SymptomRepository
     private let sexEntryRepository: SexEntryRepository
 
     init(
         logPeriodUseCase: LogPeriodUseCase,
         endPeriodUseCase: EndPeriodUseCase,
+        savePeriodIntensityUseCase: SavePeriodIntensityUseCase,
         logSymptomsUseCase: LogSymptomsUseCase,
         logSexEntryUseCase: LogSexEntryUseCase,
         startRingPlanUseCase: StartRingPlanUseCase,
+        registerRingRemovalUseCase: RegisterRingRemovalUseCase,
         endRingPlanUseCase: EndRingPlanUseCase,
         getRingStatusUseCase: GetRingStatusUseCase,
         cycleRepository: CycleRepository,
+        periodEntryRepository: PeriodEntryRepository,
         symptomRepository: SymptomRepository,
         sexEntryRepository: SexEntryRepository
     ) {
         self.logPeriodUseCase = logPeriodUseCase
         self.endPeriodUseCase = endPeriodUseCase
+        self.savePeriodIntensityUseCase = savePeriodIntensityUseCase
         self.logSymptomsUseCase = logSymptomsUseCase
         self.logSexEntryUseCase = logSexEntryUseCase
         self.startRingPlanUseCase = startRingPlanUseCase
+        self.registerRingRemovalUseCase = registerRingRemovalUseCase
         self.endRingPlanUseCase = endRingPlanUseCase
         self.getRingStatusUseCase = getRingStatusUseCase
         self.cycleRepository = cycleRepository
+        self.periodEntryRepository = periodEntryRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
     }
@@ -62,6 +71,9 @@ final class LogViewModel: ObservableObject {
 
         do {
             let day = DateNormalizer.startOfDay(selectedDate)
+
+            let periodEntry = try await periodEntryRepository.entry(for: day)
+            periodIntensity = periodEntry?.intensity
 
             if let symptomEntry = try await symptomRepository.entry(for: day) {
                 selectedSymptoms = Set(symptomEntry.symptoms)
@@ -94,14 +106,28 @@ final class LogViewModel: ObservableObject {
         }
     }
 
-    func logPeriodStart() async {
+    func logPeriodStart(realStartDate: Date?) async {
         do {
-            try await logPeriodUseCase.execute(date: selectedDate, intensity: periodIntensity)
+            try await logPeriodUseCase.execute(
+                date: selectedDate,
+                realStartDate: realStartDate,
+                intensity: periodIntensity
+            )
             try await refreshPeriodState()
             statusMessage = "Periodo registrado."
             errorMessage = nil
         } catch {
             errorMessage = "No se pudo registrar el periodo."
+        }
+    }
+
+    func savePeriodIntensity(_ intensity: PeriodIntensity?) async {
+        do {
+            periodIntensity = intensity
+            try await savePeriodIntensityUseCase.execute(date: selectedDate, intensity: intensity)
+            errorMessage = nil
+        } catch {
+            errorMessage = "No se pudo guardar el sangrado del día."
         }
     }
 
@@ -147,11 +173,22 @@ final class LogViewModel: ObservableObject {
         }
     }
 
-    func startRingPlan() async {
+    func startRingPlan(nextRemovalDate: Date) async {
         do {
-            try await startRingPlanUseCase.execute(startDate: selectedDate)
+            try await startRingPlanUseCase.execute(nextRemovalDate: nextRemovalDate)
             try await refreshRingStatus(for: selectedDate)
             statusMessage = "Plan de anillo iniciado."
+            errorMessage = nil
+        } catch {
+            errorMessage = readableError(error)
+        }
+    }
+
+    func registerRingRemoval(removalDate: Date) async {
+        do {
+            try await registerRingRemovalUseCase.execute(removalDate: removalDate)
+            try await refreshRingStatus(for: selectedDate)
+            statusMessage = "Retirada de anillo registrada."
             errorMessage = nil
         } catch {
             errorMessage = readableError(error)
@@ -162,7 +199,7 @@ final class LogViewModel: ObservableObject {
         do {
             try await endRingPlanUseCase.execute(endDate: selectedDate)
             try await refreshRingStatus(for: selectedDate)
-            statusMessage = "Plan de anillo finalizado."
+            statusMessage = "Seguimiento de anillo detenido."
             errorMessage = nil
         } catch {
             errorMessage = readableError(error)

@@ -1,7 +1,7 @@
 import Foundation
 
 protocol StartRingPlanUseCase {
-    func execute(startDate: Date) async throws
+    func execute(nextRemovalDate: Date) async throws
 }
 
 @MainActor
@@ -20,12 +20,18 @@ final class DefaultStartRingPlanUseCase: StartRingPlanUseCase {
         self.notificationScheduler = notificationScheduler
     }
 
-    func execute(startDate: Date) async throws {
+    func execute(nextRemovalDate: Date) async throws {
         if try await repository.activePlan() != nil {
             throw ContraceptionDomainError.activePlanAlreadyExists
         }
 
-        let normalizedStart = DateNormalizer.startOfDay(startDate)
+        let normalizedRemoval = DateNormalizer.startOfDay(nextRemovalDate)
+        let ringDays = 21
+        let normalizedStart = DateNormalizer.addingDays(-ringDays, to: normalizedRemoval)
+        guard normalizedStart <= normalizedRemoval else {
+            throw ContraceptionDomainError.invalidNextRemovalDate
+        }
+
         var plan = ContraceptivePlan.defaultRingPlan(startDate: normalizedStart)
         plan.createdAt = Date()
         plan.updatedAt = Date()

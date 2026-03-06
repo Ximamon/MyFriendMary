@@ -43,7 +43,8 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
 
         let symptomDays = Set(symptoms.map { DateNormalizer.startOfDay($0.date) })
         let sexDays = Set(sexEntries.map { DateNormalizer.startOfDay($0.date) })
-        let fertileDays = makeFertileDays(from: summary)
+        let fertileDays = hasActivePeriod(cycles: cycles) ? Set<Date>() : makeFertileDays(from: summary)
+        let orgasmPeakDays = makeOrgasmPeakDays(from: sexEntries)
         let monthDays = makeMonthDays(in: month)
 
         return monthDays.map { day in
@@ -55,6 +56,7 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
                 isPredictedFertile: fertileDays.contains(day),
                 hasSymptoms: symptomDays.contains(day),
                 hasSexEntry: sexDays.contains(day),
+                isOrgasmPeakDay: orgasmPeakDays.contains(day),
                 hasRingUsage: ringState == .uso,
                 hasRingBreak: ringState == .descanso
             )
@@ -83,6 +85,21 @@ final class DefaultGetCalendarMarksUseCase: GetCalendarMarksUseCase {
             let cycleEnd = DateNormalizer.startOfDay(cycle.endDate ?? today)
             return day >= cycleStart && day <= cycleEnd
         }
+    }
+
+    private func hasActivePeriod(cycles: [Cycle]) -> Bool {
+        cycles.contains { $0.endDate == nil }
+    }
+
+    private func makeOrgasmPeakDays(from entries: [SexEntry]) -> Set<Date> {
+        let maxCount = entries.map(\.orgasmCount).max() ?? 0
+        guard maxCount > 0 else { return [] }
+
+        return Set(
+            entries
+                .filter { $0.orgasmCount == maxCount }
+                .map { DateNormalizer.startOfDay($0.date) }
+        )
     }
 
     private func ringState(on day: Date, plans: [ContraceptivePlan]) -> RingDayState {

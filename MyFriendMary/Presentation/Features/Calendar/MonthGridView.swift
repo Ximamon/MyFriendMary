@@ -50,9 +50,17 @@ struct MonthGridView: View {
         let mark = markForDay(day)
 
         return VStack(spacing: 4) {
-            Text("\(calendar.component(.day, from: day))")
-                .font(AppTypography.body)
-                .foregroundStyle(AppColors.textPrimary)
+            HStack(spacing: 4) {
+                Text("\(calendar.component(.day, from: day))")
+                    .font(AppTypography.body)
+                    .foregroundStyle(AppColors.textPrimary)
+
+                if mark?.isOrgasmPeakDay == true {
+                    Image(systemName: "heart.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.pink)
+                }
+            }
 
             VStack(spacing: 2) {
                 HStack(spacing: 2) {

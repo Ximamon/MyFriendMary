@@ -6,6 +6,7 @@ final class JSONDataExportService: DataExportService {
         let generatedAt: Date
         let profile: UserProfile
         let cycles: [Cycle]
+        let periodEntries: [PeriodEntry]
         let symptomEntries: [SymptomEntry]
         let sexEntries: [SexEntry]
         let contraceptivePlans: [ContraceptivePlan]
@@ -13,6 +14,7 @@ final class JSONDataExportService: DataExportService {
 
     private let profileRepository: ProfileRepository
     private let cycleRepository: CycleRepository
+    private let periodEntryRepository: PeriodEntryRepository
     private let symptomRepository: SymptomRepository
     private let sexEntryRepository: SexEntryRepository
     private let contraceptivePlanRepository: ContraceptivePlanRepository
@@ -20,12 +22,14 @@ final class JSONDataExportService: DataExportService {
     init(
         profileRepository: ProfileRepository,
         cycleRepository: CycleRepository,
+        periodEntryRepository: PeriodEntryRepository,
         symptomRepository: SymptomRepository,
         sexEntryRepository: SexEntryRepository,
         contraceptivePlanRepository: ContraceptivePlanRepository
     ) {
         self.profileRepository = profileRepository
         self.cycleRepository = cycleRepository
+        self.periodEntryRepository = periodEntryRepository
         self.symptomRepository = symptomRepository
         self.sexEntryRepository = sexEntryRepository
         self.contraceptivePlanRepository = contraceptivePlanRepository
@@ -40,6 +44,7 @@ final class JSONDataExportService: DataExportService {
             end: Date(timeIntervalSince1970: 4_102_444_800)
         )
 
+        let periodEntries = try await periodEntryRepository.entries(in: allDataInterval)
         let symptoms = try await symptomRepository.entries(in: allDataInterval)
         let sexEntries = try await sexEntryRepository.entries(in: allDataInterval)
         let contraceptivePlans = try await contraceptivePlanRepository.fetchPlans()
@@ -48,6 +53,7 @@ final class JSONDataExportService: DataExportService {
             generatedAt: Date(),
             profile: profile,
             cycles: cycles,
+            periodEntries: periodEntries,
             symptomEntries: symptoms,
             sexEntries: sexEntries,
             contraceptivePlans: contraceptivePlans
